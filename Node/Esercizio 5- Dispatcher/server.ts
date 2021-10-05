@@ -23,3 +23,10 @@ dispatcher.addListener("POST", "/api/servizio1", function (req, res) {
     res.write(JSON.stringify({"ris":"ok"}));
     res.end(); //se c'è solo un write si può mettere il contenuto di write dentro end 
 })
+
+dispatcher.addListener("GET", "/api/servizio2", function (req, res) {
+    res.writeHead(200, HEADERS.json);
+    let nome=req["GET"].nome;
+    res.write(JSON.stringify({"ris":nome}));
+    res.end(); //se c'è solo un write si può mettere il contenuto di write dentro end 
+})
