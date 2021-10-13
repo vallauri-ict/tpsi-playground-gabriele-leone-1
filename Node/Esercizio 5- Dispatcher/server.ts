@@ -1,9 +1,12 @@
 //importo librerie 
 import * as _http from 'http';
-let HEADERS = require("./headers.json");
-let dispatcher = require("./dispatcher.ts");
+import {HEADERS} from './headers'; //import ES6 
+import {Dispatcher} from './dispatcher';
 
 let PORT: number = 1337;
+
+//dichiaro il dispatcher
+let dispatcher:Dispatcher=new Dispatcher() //è tipizzato a dispatcher
 
 //creo il server
 let server = _http.createServer(function (req, res) {

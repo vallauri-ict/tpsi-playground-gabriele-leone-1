@@ -4,13 +4,13 @@ import * as _url from 'url';
 import * as _fs from 'fs';
 import * as _mime from 'mime';
 import * as _queryString from 'query-string';
-let HEADERS = require("./headers.json");
+import {HEADERS} from './headers'; //import ES6 
 
 //tipizzo la variabile
 let paginaErrore: string;
 
 //creo classe dispatcher tramite ES6
-class Dispatcher {
+export class Dispatcher {
     prompt: string = ">>>"
     //ogni listener è costituito da un JSON del tipo 
     //{"risorsa":"callback"}
@@ -137,4 +137,3 @@ function staticListener(req: any, res: any, risorsa: any) {
     })
   
 }
-module.exports = new Dispatcher()
