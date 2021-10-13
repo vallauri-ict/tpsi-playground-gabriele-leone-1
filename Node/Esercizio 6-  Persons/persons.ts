@@ -1,4 +1,4 @@
-{
+export const persons={
     "results": [
         {
             "gender": "female",

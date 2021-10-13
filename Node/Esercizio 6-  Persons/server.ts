@@ -1,13 +1,11 @@
 //importo librerie 
 import * as _http from 'http';
-import { json } from 'stream/consumers';
-import { resourceLimits } from 'worker_threads';
-let HEADERS = require("./headers.json");
-let dispatcher = require("./dispatcher.ts");
-let persons = require("./persons.json");
+import {HEADERS} from './headers'; 
+import {Dispatcher} from "./dispatcher";
+import {persons} from "./persons";
 
 let PORT: number = 1337;
-
+let dispatcher:Dispatcher=new Dispatcher();
 //creo il server
 let server = _http.createServer(function (req, res) {
     dispatcher.dispatch(req, res);
