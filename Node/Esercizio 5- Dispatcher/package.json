@@ -1,22 +1,18 @@
 {
-  "name": "esercizio-2-typescript",
+  "name": "readfile",
   "version": "1.0.0",
-  "description": "",
+  "description": "esercizio 2 con typeScript",
   "main": "server.ts",
   "dependencies": {
     "@types/mime": "^2.0.3",
     "@types/node": "^16.9.6",
     "@types/query-string": "^6.3.0",
-    "mime": "^2.5.2",
-    "typescript": "^4.4.3"
+    "mime": "^2.5.2"
   },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "typescript"
-  ],
-  "author": "Gabriele Leone <g.leone.0889@vallauri.edu>",
+  "author": "Pelissero Luca",
   "license": "ISC"
 }

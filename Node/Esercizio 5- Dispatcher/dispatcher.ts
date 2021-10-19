@@ -1,20 +1,18 @@
-//importo librerie 
-import * as _http from 'http';
-import * as _url from 'url';
-import * as _fs from 'fs';
-import * as _mime from 'mime';
-import * as _queryString from 'query-string';
-import {HEADERS} from './headers'; //import ES6 
+import * as _http from "http";
+import * as _url from "url";
+import * as _fs from "fs";
+import * as _mime from "mime";
+import * as querystring from "query-string";
+import { inherits } from "util";
 
-//tipizzo la variabile
+import HEADERS from "./headers.json";
 let paginaErrore: string;
 
-//creo classe dispatcher tramite ES6
 export class Dispatcher {
     prompt: string = ">>>"
-    //ogni listener è costituito da un JSON del tipo 
-    //{"risorsa":"callback"}
-    //i listener sono suddivisi in base al tipo di chiamata
+
+    // ogni listener è costituito da un json del tipo { "risorsa": "callback" }
+    // i listener sono suddivisi in base al metodo di chiamata
     listeners: any = {
         "GET": {},
         "POST": {},
@@ -22,118 +20,129 @@ export class Dispatcher {
         "PUT": {},
         "PATCH": {}
     }
-    constructor() { //viene richiamato una volta sola quando istanzio la classe
+
+    // costruttore
+    constructor() {
         init();
     }
 
+    // verrà richiamato dal main ogni volta che si vorrà aggiungere un listener
+    // ES: "GET", "studenti", funzione
     addListener(metodo: string, risorsa: string, callback: any) {
-        metodo = metodo.toUpperCase();
-        //if(this.listeners[metodo]){} <- qua controlla se esiste , sotto controlla se il metodo è in listeners 
+        metodo = metodo.toUpperCase(); // per essere sicuri che il metodo arrivi scritto in maiuscolo
+        // per accedere ai metodi o property delle classi bisogna sempre utilizzare il this
+        // if (this.listeners[metodo]) {}  è equivalente a quella sotto
         if (metodo in this.listeners) {
-            //creo una nuova chiave risorsa che ha come valore callback
+            // creo una nuova chiave chiamata risorsa con come valore la callback
             this.listeners[metodo][risorsa] = callback;
         }
         else {
-            //Lancio l'errore
-            throw new Error("METODO NON VALIDO");
+            throw new Error("Metodo non valido"); // genera il mesaggio di errore
         }
     }
-    innerDispatch(req: any, res: any) {
-        //LETTURA DI METODO RISORSA E PARAMETRI 
-        let metodo = req.method;
-        let url = _url.parse(req.url, true);
-        let risorsa = url.pathname;
-        let parametri = url.query;
 
-        req["GET"] = parametri; //Crea un JSON e ci mette dentro i parametri 
-
-        //console log per controllare cosa ci è stato richiesto
-        console.log(`${this.prompt} ${metodo} : ${risorsa} ${JSON.stringify(parametri)}`);
-        if(req["BODY"])
-        {
-            console.log(`      ${JSON.stringify(req["BODY"])}`);
-        }
-        //controllo se è una pagina o un servizio 
-        if (risorsa.startsWith("/api/")) {
-            if (risorsa in this.listeners[metodo]) { //metodo contiene i listeners bisogna specificare perchè risorsa non contiene solo il metodo
-                let callback = this.listeners[metodo][risorsa] //va nel listner dei metodi e va a prendere il listener in merito alla risorsa
-                callback(req, res);//lancio in esecuzione la callback
-            }
-            else {
-                //il client si aspetta un JSON 
-                //in caso di errore a posto del JSON possiamo mandare una stringa 
-                res.writeHead(404, HEADERS.text);
-                res.write("Servizio non trovato")
-                res.end();
-            }
-        }
-        else {
-            staticListener(req, res, risorsa);
-        }
-    }
-    dispatch(req, res) {
+    dispatch(req, res){
         let metodo = req.method.toUpperCase();
         if (metodo == "GET") {
             this.innerDispatch(req, res);
         }
-        else {
-            let parametriBody: string = "";
+        else{
+            let parametriBody : string = "";
             req.on("data", function (data) {
                 parametriBody += data;
             })
-            let parametriJson = {}
-            let _this=this;
+
+            // metto i parametri convertiti in json
+            let parametriJson = {};
+            // mi salvo il puntatore alla classe 
+            let _this = this;
             req.on("end", function () {
+                // dobbiamo controllare se i parametri sono json o URLencoded
                 try {
-                    //se i parametri sono in formato JSON il try va a buon fine 
+                    // se i parametri sono in formato json la conversione andrà a buon fine
                     parametriJson = JSON.parse(parametriBody);
+                } catch (error) {
+                    // qui li converto in json in caso siano in URL-ENCODED
+                    parametriJson = querystring.parse(parametriBody);
                 }
-                catch (error) {
-                    parametriJson = _queryString.parse(parametriBody);
-                }
-                finally {
+                finally{
+                    // salviamo i parametri in un nuovo campo
                     req["BODY"] = parametriJson;
-                    //puntatore alla classe 
                     _this.innerDispatch(req, res);
                 }
             })
         }
+    }
 
-
+    innerDispatch(req, res) {
+        // deve vedere il metodo la risorla ed il parametro
+        // lettura di metodo, risorsa e parametri
+        let metodo = req.method;
+        let url = _url.parse(req.url, true);
+        let risorsa = url.pathname;
+        let parametri = url.query;
+    
+        // creo su request una chiave così va a prendere direttamente i parametri
+        req["GET"] = parametri;
+    
+        console.log(`${this.prompt} ${metodo} : ${risorsa} ${JSON.stringify(parametri)}`);
+        // lo facciamo solo se esiste
+        if (req["BODY"]) {
+            console.log(`   ${JSON.stringify(req["BODY"])}`)
+        }
+    
+        // guardiamo se è un servizio o una risorsa
+        if (risorsa.startsWith("/api/")) {
+            if (risorsa in this.listeners[metodo]) {
+                let _callback = this.listeners[metodo][risorsa];
+                // lancio in esecuzione la callback che abbiamo scritto nel main di addListeners
+                _callback(req, res);
+            }
+            else {
+                res.writeHead(404, HEADERS.text);
+                res.write("Servizio non trovato");
+                res.end();
+            }
+        }
+        else {
+            staticListeners(req, res, risorsa);
+        }
     }
 }
 
-function init() {
-    _fs.readFile("./static/error.html", function (err, data) {
-        if (!err) {
-            paginaErrore = data.toString();//paginaErrore è una stringa, data è un oggetto si risolve con -toString
-        }
-        else {
-            paginaErrore = "<h1> PAGINA NON TROVATA </h1>";
-        }
-    })
-}
-
-function staticListener(req: any, res: any, risorsa: any) {
+function staticListeners(req, res, risorsa) {
     if (risorsa == "/") {
         risorsa = "/index.html";
     }
-    let filename = "./static" + risorsa;
-    _fs.readFile(filename, function (err, data) {
+    let fileName = "./static" + risorsa;
+    _fs.readFile(fileName, function (err, data) {
         if (!err) {
-            let header = { "Content-Type": _mime.getType(filename) };
+            let header = { "Content-Type": _mime.getType(fileName) };
             res.writeHead(200, header);
             res.write(data);
             res.end();
         }
         else {
-            console.log(`${err.code} : ${err.message}`);
-            //il client si aspetta una pagina quindi gli si manda paginaErrore
+            console.log(`   ${err.code} : ${err.message}`);
+
+            // il client si aspetta una pagina
             res.writeHead(404, HEADERS.html);
             res.write(paginaErrore);
             res.end();
         }
-
     })
-  
 }
+
+function init() {
+    _fs.readFile("./static/error.html", function (err, data) {
+        if (!err) {
+            paginaErrore = data.toString();
+        }
+        else {
+            paginaErrore = "<h1>Pagina non trovata</h1>";
+        }
+    })
+}
+
+// esporto l'istanze della classe in forma anonima
+// module.exports = new Dispatcher();

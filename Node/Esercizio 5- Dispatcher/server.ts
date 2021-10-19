@@ -1,36 +1,29 @@
-//importo librerie 
-import * as _http from 'http';
-import {HEADERS} from './headers'; //import ES6 
-import {Dispatcher} from './dispatcher';
+import * as _http from "http";
 
-let PORT: number = 1337;
+import HEADERS from "./headers.json";
+import {Dispatcher} from "./dispatcher";
+let port:number = 1337;
 
-//dichiaro il dispatcher
-let dispatcher:Dispatcher=new Dispatcher() //è tipizzato a dispatcher
+let dispatcher :Dispatcher = new Dispatcher();
 
-//creo il server
+// tutte le volte che arriva una richgiesta dal client parte questa funzione
 let server = _http.createServer(function (req, res) {
-    dispatcher.dispatch(req,res);
+    dispatcher.dispatch(req, res);
 });
+server.listen(port);
+console.log("Server in ascolto sulla porta "+ port);
 
-//metto il server in ascolto sulla porta 1337
-server.listen(PORT, function () {
-
-});
-
-console.log("Server in ascolto sulla porta: " + PORT);
-
-//registrazione dei servizi
+// registrazione dei servizi
 dispatcher.addListener("POST", "/api/servizio1", function (req, res) {
     res.writeHead(200, HEADERS.json);
-    let nome=req["BODY"].nome
-    res.write(JSON.stringify({"ris":nome,"id":req["GET"].id}));
-    res.end(); //se c'è solo un write si può mettere il contenuto di write dentro end 
+    let nome = req["BODY"].nome;
+    res.write(JSON.stringify({"ris": nome, "id": req["GET"].id}));
+    res.end();
 })
 
 dispatcher.addListener("GET", "/api/servizio2", function (req, res) {
     res.writeHead(200, HEADERS.json);
-    let nome=req["GET"].nome;
+    let nome = req["GET"].nome; 
     res.write(JSON.stringify({"ris":nome}));
-    res.end(); //se c'è solo un write si può mettere il contenuto di write dentro end 
+    res.end();
 })
