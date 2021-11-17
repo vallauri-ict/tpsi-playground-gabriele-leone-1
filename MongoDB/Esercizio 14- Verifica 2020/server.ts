@@ -24,7 +24,7 @@ dispatcher.addListener("POST", "/api/servizio1", function (req, res) {
         if (!err) {
           let db = client.db(DBNAME);
           let collection = db.collection("vallauri");
-          let rq = collection.find({"$and":[{"$gte":{"dob":dataStart}},{"$lte":{"dob":dataEnd}}]}).project({"nome":1,"classe":1}).toArray();
+          let rq = collection.find({"$and":[{"dob":{"$gte":dataStart}},{"dob":{"$lte":dataEnd}}]}).project({"nome":1,"classe":1}).toArray();
           rq.then(function (data) {
             res.writeHead(200, HEADERS.json);
             res.write(JSON.stringify(data));
