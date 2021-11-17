@@ -170,3 +170,208 @@ mongoClient.connect(CONNECTIONSTRING, function (err, client) {
 });
 
 //QUERY 6- numero medio di vampiri uccisi dagli unicorni complessivamente presenti nella collezione
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("unicorns");
+    let rq = collection
+      .aggregate([
+        { $match: { gender: { $exists: true } } },
+        {
+          $group: {
+            _id: {},
+            media: { $avg: "$vampires" },
+          },
+        },
+        //arrotonda alla cifra intera 
+        //per arrotondare a quante cifre  vogliamo noi dopo la virgola bisogna scrivere media:{"$round":[$media,n]}
+        { $project: { _id: 0, ris: { "$round": "$media" } } },
+      ])
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 6: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+//QUERY 7-Media voti laboratorio,Quiz e Esami
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("quizzes");
+    let rq = collection.aggregate([
+      //le funzioni di aggregazione usate dentro project lavorano sul campo del singolo record 
+      {
+        $project: {
+          quizAvg: { $avg: "$quizzes" },
+          labAvg: { $avg: "$labs" },
+          examAvg: { $avg: ["$midterm", "$final"] }
+        }
+      },
+      {
+        $project: {
+          quizAvg: { "$round": ["$quizAvg", 1] },
+          labAvg: { "$round": ["$labAvg", 1] },
+          examAvg: { "$round": ["$examAvg", 1] }
+        }
+      }
+    ])
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 7: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+//QUERY 7 bis- Media delle medie
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("quizzes");
+    let rq = collection.aggregate([
+      //le funzioni di aggregazione usate dentro project lavorano sul campo del singolo record 
+      {
+        $project: {
+          quizAvg: { $avg: "$quizzes" },
+          labAvg: { $avg: "$labs" },
+          examAvg: { $avg: ["$midterm", "$final"] }
+        }
+      },
+      {
+        $project: {
+          quizAvg: { "$round": ["$quizAvg", 1] },
+          labAvg: { "$round": ["$labAvg", 1] },
+          examAvg: { "$round": ["$examAvg", 1] }
+        }
+      },
+      {
+        $group: {
+          _id: {},
+          mediaQuiz: { $avg: "$quizAvg" },
+          mediaLab: { $avg: "$labAvg" },
+          mediaExam: { $avg: "$examAvg" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          mediaQuiz: { $round: ["$mediaQuiz", 2] },
+          mediaLab: { $round: ["$mediaLab", 2] },
+          mediaExam: { $round: ["$mediaExam", 2] }
+        }
+      }
+    ])
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 7 bis: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+//QUERY 8- Supponendo di avere una collezione di studenti dove, per ogni studente è riportato un array
+//enumerativo con l‟elenco dei suoi voti, individuare nome e codice del secondo studente femmina
+//con la media più alta.
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("students");
+    let regex = new RegExp("F", "i");
+    let rq = collection.aggregate([
+      {
+        //per rendere case-insensitive si può anche fare genere: { $regex: /F/i }
+        $match: { genere: { $regex: regex } },
+      },
+      { $project: { genere: 1, nome: 1, classe: 1, mediaVoti: { $avg: "$voti" } } },
+      { $sort: { mediaVoti: -1 } },
+      //tolgo il primo
+      { $skip: 1 },
+      //prendo uno 
+      { $limit: 1 }
+      //oppure {$limit:2} ne prendo due e poi {$skip:1} ne salto uno e prendo il secondo 
+    ])
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 8: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+//QUERY 9- Utilizzo unwind
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("orders");
+    let rq = collection.aggregate([
+      { $project: { status: 1, nDettagli: 1 } },
+      { $unwind: "$nDettagli" },
+      { $group: { "_id": "$status", "sommaDettagli": { $sum: "$nDettagli" } } }
+    ])
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 9: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+//QUERY 10-Prendere quelli che sono nati dal 2000 in poi
+mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+  if (!err) {
+    let db = client.db(DBNAME);
+    let collection = db.collection("students");
+    let rq = collection.find({"$expr":{"$gte":[{"$year":"$nato"},2000]}}).project({_id:0,nome:1,genere:1,classe:1,nato:1})
+      .toArray();
+    rq.then(function (data) {
+      console.log("Query 10: ", data);
+    });
+    rq.catch(function (err) {
+      console.log("Errore esecuzione query: " + err.message);
+    });
+    rq.finally(function () {
+      client.close();
+    });
+  } else {
+    console.log("errore nella connessione al databasse :" + err.message);
+  }
+});
+
+
