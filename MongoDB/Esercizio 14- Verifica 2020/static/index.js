@@ -6,7 +6,7 @@ $(document).ready(function() {
         let request = inviaRichiesta("post", "/api/servizio1",{"dataStart":dataStart,"dataEnd":dataEnd});
         request.fail(errore);
         request.done(function(data) {
-            alert(JSON.stringify(data));
+            console.log(JSON.stringify(data));
         });
     });
 });
