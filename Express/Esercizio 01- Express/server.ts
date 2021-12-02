@@ -172,3 +172,7 @@ app.use("/", function (req, res, next) {
     res.send(paginaErrore);
   }
 });
+
+app.use(function(err,req,res,next){
+  console.log("Errore nel codice server",err.message)
+})
