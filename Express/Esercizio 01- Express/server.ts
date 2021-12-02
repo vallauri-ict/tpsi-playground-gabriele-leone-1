@@ -101,7 +101,7 @@ app.get("/api/risorsa1", function (req, res, next) {
   }
 });
 
-app.patch("/api/risorsa1", function (req, res, next) {
+app.patch("/api/risorsa2", function (req, res, next) {
   //esegue la serializzazione in automatico , non c'è bisogno di fare JSON.stringify()
   let rName = req.body.nome;
   let rVampires = req.body.vampires;
@@ -116,7 +116,36 @@ app.patch("/api/risorsa1", function (req, res, next) {
     );
     rq.then(function (data) {
       if (data) res.send(data);
-      console.log("risorsa 1 : ", data);
+      console.log("risorsa 2 : ", data);
+    });
+    rq.catch(function (err) {
+      res
+        .status(503)
+        .send("Internal Server Error - Errore nella sintassi della Query");
+    });
+    rq.finally(function () {
+      req["client"].close();
+    });
+  } else {
+    res.status(400).send("Parametri richiesti non trovati");
+    req["client"].close();
+  }
+});
+
+app.get("/api/risorsa3/:gender/:hair", function (req, res, next) {
+  //esegue la serializzazione in automatico , non c'è bisogno di fare JSON.stringify()
+  let rGender = req.params.gender;
+  let rHair = req.params.hair;
+  if (rGender && rHair) {
+    //la if sull'esistenza dei parametri in quest ocaso non serve perchè non entra proprio nella route
+    let db = req["client"].db(DBNAME) as _mongodb.Db; //tipizza per avere l'IntelliSense
+    let collection = db.collection("unicorns");
+    //prende tutti i record e li converte in un vettore enumerativo
+    //$lte: less than equal , $gte: greater than equal
+    let rq = collection.find({$and:[{"gender":rGender},{"hair":rHair}]}).toArray();
+    rq.then(function (data) {
+      if (data) res.send(data);
+      console.log("risorsa 3 : ", data);
     });
     rq.catch(function (err) {
       res

@@ -12,7 +12,7 @@ $(document).ready(function () {
   });
 
   $("#btnInvia2").on("click", function () {
-    let request = inviaRichiesta("patch", "/api/risorsa1", {
+    let request = inviaRichiesta("patch", "/api/risorsa2", {
       nome: "Unico",
       vampires: 3,
     });
@@ -25,4 +25,15 @@ $(document).ready(function () {
       }
     });
   });
+//posso dare alla risorsa nome uguale se sono due chiamati differenti, non posso fare due get dello stesso servizio 3 
+//posso specificare i parametri come parte della risorsa
+  $("#btnInvia3").on("click", function () {
+    let request = inviaRichiesta("get", "/api/risorsa3/m/brown");
+    request.fail(errore);
+    request.done(function (data) {
+      alert(JSON.stringify(data))
+      console.log(data)
+    });
+  });
 });
+
