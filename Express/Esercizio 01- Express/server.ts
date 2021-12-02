@@ -1,10 +1,15 @@
 import * as http from "http";
 import express from "express";
+import * as _mongodb from "mongodb";
 import HEADERS from "./headers.json";
 import * as bodyParser from "body-parser";
 import * as fs from "fs";
 let port: number = 1337;
 
+const mongoClient = _mongodb.MongoClient;
+const CONNECTIONSTRING =
+  "mongodb+srv://admin:admin@cluster0.f9c5j.mongodb.net/5B?retryWrites=true&w=majority"; //mongodb://127.0.0.1:27017
+const DBNAME = "5B";
 let app = express();
 
 let server = http.createServer(app);
@@ -39,16 +44,17 @@ app.use("/", function (req, res, next) {
 app.use("/", express.static("./static"));
 
 //3. route lettura parametri post
+//body parser serve ad andare a leggere i parametri post passati nel body
 app.use("/", bodyParser.json());
 app.use("/", bodyParser.urlencoded({ extended: true }));
 
 //4.log dei parametri
 app.use("/", function (req, res, next) {
-  if ((Object.keys(req.query).length>0)){
-    console.log("parametri GET:", req.query);
+  if (Object.keys(req.query).length > 0) {
+    console.log("            Parametri GET:", req.query);
   }
-  if (Object.keys(req.body).length>0) {
-    console.log("parametri BODY:", req.body);
+  if (Object.keys(req.body).length > 0) {
+    console.log("            Parametri BODY:", req.body);
   }
   next();
 });
@@ -56,17 +62,74 @@ app.use("/", function (req, res, next) {
 //**************************************************************************
 // ELENCO DELLE ROUTE di risposta al Client
 //**************************************************************************
-//qua non serve next perchè quando finiscono partono subito 
+//qua non serve next perchè quando finiscono partono subito
+app.use("/", function (req, res, next) {
+  mongoClient.connect(CONNECTIONSTRING, function (err, client) {
+    if (err) {
+      res.status(503).send("DB CONNECTION ERROR");
+    } else {
+      console.log("Connessione OK");
+      req["client"] = client; //salvo client nella request
+      next();
+    }
+  });
+});
 app.get("/api/risorsa1", function (req, res, next) {
   //esegue la serializzazione in automatico , non c'è bisogno di fare JSON.stringify()
-  let nome=req.query.nome 
-  res.send({"nome":nome});
+  let rName = req.query.nome;
+  if (rName) {
+    let db = req["client"].db(DBNAME) as _mongodb.Db; //tipizza per avere l'IntelliSense
+    let collection = db.collection("unicorns");
+    //prende tutti i record e li converte in un vettore enumerativo
+    //$lte: less than equal , $gte: greater than equal
+    let rq = collection.find({ name: rName }).toArray();
+    rq.then(function (data) {
+      if (data) res.send(data);
+      console.log("risorsa 1 : ", data);
+    });
+    rq.catch(function (err) {
+      res
+        .status(503)
+        .send("Internal Server Error - Errore nella sintassi della Query");
+    });
+    rq.finally(function () {
+      req["client"].close();
+    });
+  } else {
+    res.status(400).send("Parametro richiesto non trovato");
+    req["client"].close();
+  }
 });
 
-app.post("/api/risorsa1", function (req, res, next) {
+app.patch("/api/risorsa1", function (req, res, next) {
   //esegue la serializzazione in automatico , non c'è bisogno di fare JSON.stringify()
-  let nome=req.body.nome
-  res.send({"nome":nome})
+  let rName = req.body.nome;
+  let rVampires = req.body.vampires;
+  if (rName && rVampires) {
+    let db = req["client"].db(DBNAME) as _mongodb.Db; //tipizza per avere l'IntelliSense
+    let collection = db.collection("unicorns");
+    //prende tutti i record e li converte in un vettore enumerativo
+    //$lte: less than equal , $gte: greater than equal
+    let rq = collection.updateOne(
+      { name: rName },
+      { $inc: { vampires: rVampires } }
+    );
+    rq.then(function (data) {
+      if (data) res.send(data);
+      console.log("risorsa 1 : ", data);
+    });
+    rq.catch(function (err) {
+      res
+        .status(503)
+        .send("Internal Server Error - Errore nella sintassi della Query");
+    });
+    rq.finally(function () {
+      req["client"].close();
+    });
+  } else {
+    res.status(400).send("Parametri richiesti non trovati");
+    req["client"].close();
+  }
 });
 
 //**************************************************************************
