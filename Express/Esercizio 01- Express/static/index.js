@@ -25,7 +25,7 @@ $(document).ready(function () {
       }
     });
   });
-//posso dare alla risorsa nome uguale se sono due chiamati differenti, non posso fare due get dello stesso servizio 3 
+//posso dare alla risorsa nome uguale se sono due chiamati differenti, non posso fare due get della stessa risorsa 3 
 //posso specificare i parametri come parte della risorsa
   $("#btnInvia3").on("click", function () {
     let request = inviaRichiesta("get", "/api/risorsa3/m/brown");
