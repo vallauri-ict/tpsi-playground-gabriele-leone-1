@@ -63,6 +63,8 @@ app.use("/", function (req, res, next) {
 // ELENCO DELLE ROUTE di risposta al Client
 //**************************************************************************
 //qua non serve next perchè quando finiscono partono subito
+
+//middleware di apertura della connessione
 app.use("/", function (req, res, next) {
   mongoClient.connect(CONNECTIONSTRING, function (err, client) {
     if (err) {
@@ -74,6 +76,72 @@ app.use("/", function (req, res, next) {
     }
   });
 });
+
+//lettura delle collezioni presenti nel DB
+app.get("/api/getCollections",function (req, res, next) {
+  let db = req["client"].db(DBNAME) as _mongodb.Db;
+  let collections = db.listCollections();
+  let rq = collections.toArray();
+  rq.then(function(data) {
+    res.send(data)
+  });
+  rq.catch(function(err) {
+    res.status(503).send("Query syntax error")
+  });
+  rq.finally(function() {
+    req["client"].close()
+  });
+});
+
+//middleWare per Intercettare parametri
+let currentCollection=""
+let id=""
+app.use("/api/:collection/:id?",function(req,res,next){
+  currentCollection=req.params.collection
+  id=req.params.id
+  next()
+})
+//con il ? risolvo i problemi rendendo facoltativo l'id che se non c'è viene messo a null
+// app.use("/api/:collection/:id",function(req,res,next){
+//   id=req.params.id
+//   next()
+// })
+
+//listener specifico
+
+//1- Listener GET - risponde  a tutte le chiamate GET , il client può fare due tipi di chiamate get , 
+// /unicorns tutto l'elenco dei dati, /unicorns/5 dati specifici unicorno numero 5 
+app.get("/api/*",function(req,res,next){
+  let db = req["client"].db(DBNAME) as _mongodb.Db;
+  let collections = db.collection(currentCollection);
+  if(!id){
+    let rq = collections.find().toArray();
+    rq.then(function(data) {
+      res.send(data)
+    });
+    rq.catch(function(err) {
+      res.status(503).send("Query syntax error")
+    });
+    rq.finally(function() {
+      req["client"].close()
+    });
+  }
+  else
+  {
+    let oid=new _mongodb.ObjectId(id)
+    let rq = collections.find({"_id":oid}).toArray();
+    rq.then(function(data) {
+      res.send(data)
+    });
+    rq.catch(function(err) {
+      res.status(503).send("Query syntax error")
+    });
+    rq.finally(function() {
+      req["client"].close()
+    });
+  }
+  
+})
 
 //**************************************************************************
 // DEFAULT ROUTE E ROUTE DI GESTIONE DEGLI ERRORI - default route : risponde sempre quando TUTTE  le altre route non sono andate a buon fine

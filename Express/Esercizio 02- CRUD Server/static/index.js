@@ -1,39 +1,84 @@
+"use strict";
+
 $(document).ready(function () {
-  $("#btnInvia").on("click", function () {
-    let request = inviaRichiesta("get", "/api/risorsa1", { nome: "Aurora" });
-    request.fail(errore);
-    request.done(function (data) {
-      if (data.length > 0) {
-        alert(JSON.stringify(data));
-      } else {
-        alert("Corrispondenza non trovata");
-      }
-    });
+  let divIntestazione = $("#divIntestazione");
+  let divCollections = $("#divCollections");
+  let table = $("#mainTable");
+  let divDettagli = $("#divDettagli");
+  let currentCollection = "";
+  let filters=$(".card").first()
+
+  filters.hide()
+  let request = inviaRichiesta("get", "api/getCollections");
+  request.fail(errore);
+  request.done(function (collections) {
+    console.log(collections);
+    let label = divCollections.children("label");
+    for (const collection of collections) {
+      let clone = label.clone();
+      clone.appendTo(divCollections);
+      clone.children("input").val(collection.name);
+      clone.children("span").text(collection.name);
+      divCollections.append("<br>");
+    }
+    label.remove();
   });
 
-  $("#btnInvia2").on("click", function () {
-    let request = inviaRichiesta("patch", "/api/risorsa2", {
-      nome: "Unico",
-      vampires: 3,
-    });
-    request.fail(errore);
-    request.done(function (data) {
-      if (data.modifiedCount > 0) {
-        alert("Aggiornamento Eseguito Correttamente");
-      } else {
-        alert("Nessuna Corrispondenza");
-      }
-    });
-  });
-//posso dare alla risorsa nome uguale se sono due chiamati differenti, non posso fare due get della stessa risorsa 3 
-//posso specificare i parametri come parte della risorsa
-  $("#btnInvia3").on("click", function () {
-    let request = inviaRichiesta("get", "/api/risorsa3/m/brown");
-    request.fail(errore);
-    request.done(function (data) {
-      alert(JSON.stringify(data))
-      console.log(data)
-    });
-  });
+  divCollections.on("click", "input[type=radio]", function () {
+    
+    currentCollection=$(this).val();
+    let request=inviaRichiesta("GET","/api/"+currentCollection)
+    request.fail(errore)
+    request.done(function(data){
+        console.log(data)
+        table.children("tbody").empty()
+        divIntestazione.find("strong").eq(0).text(currentCollection)
+        divIntestazione.find("strong").eq(1).text(data.length)
+        if(currentCollection=="unicorns"){
+            filters.show()
+        }
+        else
+        {
+            filters.hide()
+        }
+        for (const item of data) {
+            let tr=$("<tr>")
+            tr.appendTo(table.children("tbody"))
+            let td=$("<td>")
+            td.appendTo(tr)
+            td.prop("id",item._id)
+            td.on("click",visualizzaDettagli)
+            td.text(item._id)
+
+            td=$("<td>")
+            td.appendTo(tr)
+            td.prop("id",item._id)
+            td.on("click",visualizzaDettagli)
+            td.text(item.name)
+
+            td=$("<td>")
+            td.appendTo(tr)
+            for (let i = 0; i < 3; i++) {
+                $("<div>").appendTo(td)
+                
+            }
+        }
+    })
+  })
+
+
+  function visualizzaDettagli(){
+    let id=$(this).prop("id")
+    let requestDettagli=inviaRichiesta("GET","/api/"+currentCollection+"/"+id)
+    requestDettagli.fail(errore)
+    requestDettagli.done(function(data){
+        console.log(data)
+        let content=""
+        for (const key in data[0]) {
+            content+="<strong>"+ key +"</strong> : "+data[0][key]+"<br>"
+        }
+        divDettagli.html(content)
+    })
+}
 });
 
