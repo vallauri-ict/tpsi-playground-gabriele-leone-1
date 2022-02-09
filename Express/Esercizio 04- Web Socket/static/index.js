@@ -1,6 +1,5 @@
 $(document).ready(function() {
-    let username = prompt("Inserisci lo username:");
-    
+    let user={"username":"","room":""};  
 	// mi connetto al server che mi ha inviato la pagina,
 	// il quale mi restituisce il suo serverSocket
 	// io.connect é SINCRONO, bloccante
@@ -10,18 +9,27 @@ $(document).ready(function() {
 	       in questo modo si evita di connetere/disconnettere + volte */
 	serverSocket.on('connect', function() {
 		console.log("connessione ok");
-        serverSocket.emit("login", username); //passiamo un messaggio di login al server dove comunichiamo l'username alla function di callback
+        user.username = prompt("Inserisci lo username:"); //richiedo l'username 
+        if(user.username=="pippo" || user.username=="pluto")
+        {
+            user.room="room1";
+        }
+        else
+        {
+            user.room="defaultRoom"; //stanza standard di entrata
+        }
+        serverSocket.emit("login",JSON.stringify(user)); //passiamo un messaggio di login al server dove comunichiamo l'username e la room a cui connettersi alla function di callback
     });
 
     // 1b) utente valido / non valido
     serverSocket.on('loginAck', function(data) {
 		if (data=="NOK"){
 			alert("Nome già esistente. Scegliere un altro nome")
-			username = prompt("Inserisci un nuovo username:");
-			serverSocket.emit("login", username);
+			user.username = prompt("Inserisci un nuovo username:");
+			serverSocket.emit("login", user.username);
 		}
 		else
-			document.title = username;
+			document.title = user.username;
     });  
 
 	// 2a) invio messaggio

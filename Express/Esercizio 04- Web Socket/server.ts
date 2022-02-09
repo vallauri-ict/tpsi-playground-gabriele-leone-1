@@ -28,24 +28,29 @@ let users = []; //il socket di ogni utente viene salvato all'interno di questo v
 
 io.on('connection', function(clientSocket) {
 	//let user:any = {}; così accetto tutto 
-	let user = {} as {username:string,socket:Socket};
+	let user = {} as {username:string,socket:Socket,room:string};
 	// 1) ricezione username
-	clientSocket.on('login', function(username) {
+	clientSocket.on('login', function(userInfo) {
+		userInfo=JSON.parse(userInfo);
 		// controllo se user esiste già
 		//find scorre tutto il vettore enumerativo degli users 
 		let item = users.find(function(item) {
-			return (item.username == username)
+			return (item.username == userInfo.username)
 		})
 		if (item != null) { //controlla se esiste già un nome uguale e dice che non va bene 
 			clientSocket.emit("loginAck", "NOK")
 		}
-		else{//se il nome non esiste si salva l'username e il suo socket nel user  dichiarato nella funzione
-			user.username = username;
+		else{//se il nome non esiste si salva l'username il suo socket e la room a cui collegarsi  nel user  dichiarato nella funzione
+			user.username = userInfo.username;
 			user.socket = clientSocket;
+			user.room=userInfo.room;
 			users.push(user); //e poi faccio la push nel vettore globale 
 			clientSocket.emit("loginAck", "OK") //emit evento OK
 			log('User ' + colors.yellow(user.username) +
 						" (sockID=" + user.socket.id + ') connected!');
+			//inserisco l'user nella stanza richiestaà
+			//this è il clientSocket. Il socket di quel client viene connesso alla stanza
+			this.join(user.room);
 		}
 	});
 
@@ -59,7 +64,10 @@ io.on('connection', function(clientSocket) {
 			'message': msg, //messaggio scritto
 			'date': new Date() //data e ora di quando è stato scritto il mex 
 		}
-		io.sockets.emit('message_notify', JSON.stringify(response)); //spedisice a tutti compreso il mittente se avessi usato clientSocket il mittente non avrebbe ricevuto il mittente
+		//spedisice a tutti compreso il mittente se avessi usato clientSocket il mittente non avrebbe ricevuto il feedback
+		// io.sockets.emit('message_notify', JSON.stringify(response)); 
+		//con questa invio il messaggio solo nella stanza richiesta
+		io.to(user.room).emit('message_notify', JSON.stringify(response)); 
 	});
 
     // 3) disconnessione dell'utente
