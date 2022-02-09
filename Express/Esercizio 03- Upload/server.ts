@@ -4,7 +4,14 @@ import express from "express";
 import * as bodyParser from "body-parser";
 import cors from "cors";
 import fileUpload, { UploadedFile } from "express-fileupload";
+import ENVIROMENT from "./enviroment.json";
+import cloudinary from "cloudinary";
 
+cloudinary.v2.config({
+    cloud_name:"iis-g-vallauri-leone",
+    API_KEY:"191912376222596",
+    API_SECRET:"zroIb1VkTHNL76_cyPDNt8mgBI8",
+})
 // MongoDB
 import * as _mongodb from "mongodb";
 const mongoClient = _mongodb.MongoClient;
