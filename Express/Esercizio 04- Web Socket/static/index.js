@@ -26,7 +26,7 @@ $(document).ready(function() {
 		if (data=="NOK"){
 			alert("Nome già esistente. Scegliere un altro nome")
 			user.username = prompt("Inserisci un nuovo username:");
-			serverSocket.emit("login", user.username);
+			serverSocket.emit("login", JSON.stringify(user));
 		}
 		else
 			document.title = user.username;
