@@ -3,21 +3,18 @@ $(document).ready(function() {
 	// mi connetto al server che mi ha inviato la pagina,
 	// il quale mi restituisce il suo serverSocket
 	// io.connect é SINCRONO, bloccante
+
+    $("#btnConnetti").on("click",function(){
+        
+    })
+
 	let serverSocket = io({transports:['websocket'], upgrade: false}).connect(); //così non perdo mai la connessione
 
     /* 1a) lo username viene inviato SOLO a connessione avvenuta
 	       in questo modo si evita di connetere/disconnettere + volte */
 	serverSocket.on('connect', function() {
 		console.log("connessione ok");
-        user.username = prompt("Inserisci lo username:"); //richiedo l'username 
-        if(user.username=="pippo" || user.username=="pluto")
-        {
-            user.room="room1";
-        }
-        else
-        {
-            user.room="defaultRoom"; //stanza standard di entrata
-        }
+        impostaUser();
         serverSocket.emit("login",JSON.stringify(user)); //passiamo un messaggio di login al server dove comunichiamo l'username e la room a cui connettersi alla function di callback
     });
 
@@ -25,7 +22,7 @@ $(document).ready(function() {
     serverSocket.on('loginAck', function(data) {
 		if (data=="NOK"){
 			alert("Nome già esistente. Scegliere un altro nome")
-			user.username = prompt("Inserisci un nuovo username:");
+            impostaUser();
 			serverSocket.emit("login", JSON.stringify(user));
 		}
 		else
@@ -54,6 +51,17 @@ $(document).ready(function() {
         alert("Sei stato disconnesso!");
     });
 
+    function impostaUser(){
+        user.username = prompt("Inserisci lo username:"); //richiedo l'username 
+        if(user.username=="pippo" || user.username=="pluto")
+        {
+            user.room="room1";
+        }
+        else
+        {
+            user.room="defaultRoom"; //stanza standard di entrata
+        }
+    }
 
     function visualizza(username, message, date) {
         let wrapper = $("#wrapper")
